@@ -87,7 +87,8 @@ function loop(){
     if (len>0){
       var nor=scl(diff,1/len)
       ogre.pos=add(ogre.pos,nor)
-      var ang=getAng(nor)
+      var ang=getAng(nor)/Math.pi*180
+      "ogre/ogre"+Math.round(ang/45)*45+".png"
     }
     w=64
     h=64
