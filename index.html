@@ -19,9 +19,40 @@ var c = document.getElementById("myCanvas");
 c.addEventListener('mousemove', function(evt) {
   var mousePos = getMousePos(c, evt);
   var message = 'Mouse position: ' + mousePos.x + ',' + mousePos.y;
-  console.log(message);
+  //console.log(message);
 }, false);
-imgs=['test.png','testW.png','testW2.png','test180.png']
+c.addEventListener('mouseup', function(evt) {
+  var mousePos = getMousePos(c, evt);
+  ogre.dest.x=mousePos.x
+  ogre.dest.y=mousePos.y
+  //var message = 'Mouse position: ' + mousePos.x + ',' + mousePos.y;
+  //console.log(message);
+});
+function getDiff(v1,v2){
+  return {x:v2.x-v1.x,y:v2.y-v1.y}
+}
+function getAng(v){
+  return Math.atan2(v.y,v.x)
+}
+function getLen(v){
+  return Math.sqrt(v.x*v.x+v.y*v.y)
+}
+function scl(v,s){
+  return {x:v.x*s,y:v.y*s}
+}
+function add(v1,v2){
+  return {x:v1.x+v2.x,y:v1.y+v2.y}
+}
+//imgs=['test.png','testW.png','testW2.png','test180.png']
+imgs=['test.png']
+ogreAngs=[]
+for (var ang=0;ang<360;ang+=45){
+  imgs.push('ogre/ogre'+ang+'.png')
+  ogreAngs.push('ogre/ogre'+ang+'.png')
+}
+objs=[]
+ogre={pos:{x:0,y:0},dest:{x:0,y:0}}
+objs.push(ogre)
 imgsLoaded=0
 loadedImgs={}
 for (s in imgs){
@@ -34,10 +65,10 @@ for (s in imgs){
   };
   loadedImgs[imgs[s]]=img;
 }
-num=0
-add=1
+num=1
 which=0
 function loop(){
+  setTimeout(loop,30);
   var c = document.getElementById("myCanvas");
   var ctx = c.getContext("2d");
   ctx.clearRect(0, 0, c.width, c.height);
@@ -45,20 +76,31 @@ function loop(){
   ctx.arc(95,50,40,0,2*Math.PI);
   ctx.stroke();
   ctx.drawImage(loadedImgs['test.png'],20,20,40,40,10,10,70,70);
-  walks=['testW.png','testW2.png','test180.png']
-  img=loadedImgs[walks[Math.floor(which/2)%walks.length]]
-  w=64
-  h=64
-  ctx.drawImage(img,img.width/7*(num%6)+img.width/7/2-w/2,img.height/6*Math.floor(num/6)+img.height/6/2-h/2,w,h,30,30,130,130);
-  num+=add
-  if (num+1==35){
-    add=-1
+  //walks=['testW.png','testW2.png','test180.png']
+  for (var i in objs){
+    var obj=objs[i]
+    walks=ogreAngs
+    img=loadedImgs[walks[Math.floor(which/2)%walks.length]]
+    //img=loadedImgs[ogreAngs[0]]
+    var diff=getDiff(ogre.pos,ogre.dest)
+    var len=getLen(diff)
+    if (len>0){
+      var nor=scl(diff,1/len)
+      ogre.pos=add(ogre.pos,nor)
+      var ang=getAng(nor)
+    }
+    w=64
+    h=64
+    rows=4
+    cols=5
+    ctx.drawImage(img,img.width/cols*(num%cols)+img.width/cols/2-w/2,img.height/rows*Math.floor(num/cols)+img.height/rows/2-h/2,w,h,obj.pos.x-32,obj.pos.y-32,64,64);
+    num+=1
+    margin=1
+    if (num+margin==rows*cols){
+      num=1
+      which++
+    }
   }
-  if (num-1==15){
-    which++
-    add=1
-  }
-  setTimeout(loop,30);
 }
 var ogg = new Audio('test.ogg');
 //ogg.src="test.ogg";

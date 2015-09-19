@@ -24,7 +24,7 @@ class SocketHandler(websocket.WebSocketHandler):
 app = web.Application([
   (r'/', IndexHandler),
   (r'/ws', SocketHandler),
-  (r'/(\w*.png)', web.StaticFileHandler, {'path': './'}),
+  (r'/([a-zA-Z0-9_/]*.png)', web.StaticFileHandler, {'path': './'}),
   (r'/(\w*.ogg)', web.StaticFileHandler, {'path': './'}),
   #(r'/(rest_api_example.png)', web.StaticFileHandler, {'path': './'}),
 ])
