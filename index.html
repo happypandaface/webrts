@@ -43,16 +43,58 @@ function scl(v,s){
 function add(v1,v2){
   return {x:v1.x+v2.x,y:v1.y+v2.y}
 }
+function drawAnim(pos,anim,ang,dt,ctx){
+  if (ang<0)
+    ang+=360
+  if (ang>360)
+    ang-=360
+  imgName=anim.prefix+ang+".png"
+  img=loadedImgs[imgName]
+  w=128
+  h=128
+  rows=anim.rows
+  cols=anim.cols
+  if (anim.num<anim.start)
+    anim.num=anim.start
+  if (anim.num>anim.end)
+    anim.num=anim.end
+  num=anim.num
+  ctx.drawImage(img,img.width/cols*(num%cols)+img.width/cols/2-w/2,img.height/rows*Math.floor(num/cols)+img.height/rows/2-h/2,w,h,pos.x-anim.size.w/2,pos.y-anim.size.h/2,anim.size.w,anim.size.h);
+  //anim.num+=1
+  //margin=1
+  anim.time+=dt
+  //console.log(anim.time)
+  while(anim.time>=50){
+    anim.time-=50
+    anim.num++
+  }
+  if (anim.start!=anim.end){
+    while(anim.num>=anim.end){
+      anim.num-=(anim.end-anim.start)
+    }
+  }
+}
 //imgs=['test.png','testW.png','testW2.png','test180.png']
-imgs=['test.png']
+imgs=['test.png','houseImg0.png']
 ogreAngs=[]
 for (var ang=0;ang<360;ang+=45){
-  imgs.push('ogre/ogre'+ang+'.png')
-  ogreAngs.push('ogre/ogre'+ang+'.png')
+  imgName='ogre/ang'+ang+'.png'
+  imgs.push(imgName)
+  ogreAngs.push(imgName)
 }
 objs=[]
-ogre={pos:{x:0,y:0},dest:{x:0,y:0}}
-objs.push(ogre)
+for (var i=0;i<1;++i){
+  walkAnim={prefix:"ogre/ang",time:0,num:0,cols:7,rows:6,end:20,start:1,speed:1,size:{w:100,h:100}}
+  standAnim={prefix:"ogre/ang",time:0,num:0,cols:7,rows:6,end:0,start:0,speed:1,size:{w:100,h:100}}
+  attackAnim={prefix:"ogre/ang",time:0,num:0,cols:7,rows:6,end:40,start:21,speed:1,size:{w:200,h:200}}
+  ogre={anims:{walk:walkAnim,stand:standAnim,attack:attackAnim},anim:standAnim,pos:{x:0,y:0},dest:{x:0,y:0},lastAng:0}
+  objs.push(ogre)
+}
+{
+  anim={prefix:"houseImg",time:0,num:0,cols:1,rows:1,end:0,start:0,speed:1,size:{w:150,h:150}}
+  house={anims:{stand:anim},pos:{x:40,y:40},dest:{x:40,y:40},lastAng:0}
+  objs.push(house)
+}
 imgsLoaded=0
 loadedImgs={}
 for (s in imgs){
@@ -60,15 +102,22 @@ for (s in imgs){
   img.src=imgs[s];
   img.onload=function(){
     imgsLoaded++
+    console.log("cur: "+imgsLoaded+", tot: "+imgs.length)
     if (imgsLoaded==imgs.length)
       loop()
   };
   loadedImgs[imgs[s]]=img;
 }
-num=1
-which=0
+//num=1
+//which=0
+lastTime=0
 function loop(){
-  setTimeout(loop,30);
+  setTimeout(loop,50);
+  var curTime=new Date().getTime();
+  if (lastTime==0)
+    lastTime=curTime
+  var dt=curTime-lastTime
+  lastTime=curTime
   var c = document.getElementById("myCanvas");
   var ctx = c.getContext("2d");
   ctx.clearRect(0, 0, c.width, c.height);
@@ -79,28 +128,28 @@ function loop(){
   //walks=['testW.png','testW2.png','test180.png']
   for (var i in objs){
     var obj=objs[i]
-    walks=ogreAngs
-    img=loadedImgs[walks[Math.floor(which/2)%walks.length]]
+    //walks=ogreAngs
+    //img=loadedImgs[walks[Math.floor(which/2)%walks.length]]
     //img=loadedImgs[ogreAngs[0]]
-    var diff=getDiff(ogre.pos,ogre.dest)
+    var diff=getDiff(obj.pos,obj.dest)
     var len=getLen(diff)
-    if (len>0){
+    if (len>10){
       var nor=scl(diff,1/len)
-      ogre.pos=add(ogre.pos,nor)
-      var ang=getAng(nor)/Math.pi*180
-      "ogre/ogre"+Math.round(ang/45)*45+".png"
+      nor=scl(nor,dt*(1/30))
+      obj.pos=add(obj.pos,nor)
+      var ang=getAng(nor)/Math.PI*180
+      ang=(Math.round(ang/45)*45-90)
+      obj.lastAng=ang
+      obj.anim=obj.anims.walk
+    }else{
+      obj.anim=obj.anims.stand
     }
-    w=64
-    h=64
-    rows=4
-    cols=5
-    ctx.drawImage(img,img.width/cols*(num%cols)+img.width/cols/2-w/2,img.height/rows*Math.floor(num/cols)+img.height/rows/2-h/2,w,h,obj.pos.x-32,obj.pos.y-32,64,64);
-    num+=1
-    margin=1
-    if (num+margin==rows*cols){
-      num=1
-      which++
-    }
+    ang=obj.lastAng
+    drawAnim(obj.pos,obj.anim,ang,dt,ctx)
+    //if (obj.anim.num+margin==obj.anim.end){
+    //  obj.anim.num=1
+      //which++
+    //}
   }
 }
 var ogg = new Audio('test.ogg');
