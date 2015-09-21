@@ -31,7 +31,7 @@ document.exitPointerLock = document.exitPointerLock ||
 game={}
 game.screen={offset:{x:0,y:0},dim:{w:c.width,h:c.height}}
 game.cursorAnim={prefix:"hand",time:0,num:0,cols:1,rows:1,end:0,start:0,speed:1,size:{w:150,h:150},ssize:{x:512,y:512}}
-game.cursor={canvas:c,anim:game.cursorAnim,pos:{x:0,y:0},locked:false}
+game.cursor={canvas:c,anim:game.cursorAnim,pos:{x:100,y:100},locked:false}
 function changeCallback(e){
 
   if(document.pointerLockElement === game.cursor.canvas ||
@@ -66,24 +66,24 @@ c.addEventListener('mousemove', function(evt) {
     dy=-30
   if(game.cursor.locked)
     game.cursor.pos=add(game.cursor.pos, {x:dx,y:dy})
-  if(game.cursor.pos.x<0){
+  if(game.cursor.pos.x<=0){
     diffX=game.cursor.pos.x
-    game.screen.offset.x+=diffX
+    //game.screen.offset.x+=diffX
     game.cursor.pos.x=0
   }
-  if(game.cursor.pos.x>game.screen.dim.w){
+  if(game.cursor.pos.x>=game.screen.dim.w){
     diffX=game.cursor.pos.x-game.screen.dim.w
-    game.screen.offset.x+=diffX
+    //game.screen.offset.x+=diffX
     game.cursor.pos.x=game.screen.dim.w
   }
-  if(game.cursor.pos.y<0){
+  if(game.cursor.pos.y<=0){
     diffY=game.cursor.pos.y
-    game.screen.offset.y+=diffY
+    //game.screen.offset.y+=diffY
     game.cursor.pos.y=0
   }
-  if(game.cursor.pos.y>game.screen.dim.h){
+  if(game.cursor.pos.y>=game.screen.dim.h){
     diffY=game.cursor.pos.y-game.screen.dim.h
-    game.screen.offset.y+=diffY
+    //game.screen.offset.y+=diffY
     game.cursor.pos.y=game.screen.dim.h
   }
   //var mousePos = getMousePos(c, evt);
@@ -225,6 +225,16 @@ function loop(){
     lastTime=curTime
   var dt=curTime-lastTime
   lastTime=curTime
+  var scrollSpeed=.32
+  var margin=20
+  if(game.cursor.pos.x<=margin)
+    game.screen.offset.x+=-scrollSpeed*dt
+  if(game.cursor.pos.x>=game.screen.dim.w-margin)
+    game.screen.offset.x+=scrollSpeed*dt
+  if(game.cursor.pos.y<=margin)
+    game.screen.offset.y+=-scrollSpeed*dt
+  if(game.cursor.pos.y>=game.screen.dim.h-margin)
+    game.screen.offset.y+=scrollSpeed*dt
   var c = document.getElementById("myCanvas");
   var ctx = c.getContext("2d");
   ctx.clearRect(0, 0, c.width, c.height);
