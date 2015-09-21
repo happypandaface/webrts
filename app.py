@@ -26,7 +26,7 @@ app = web.Application([
   (r'/', IndexHandler),
   (r'/ws', Connection),
   (r'/([a-zA-Z0-9_/]*.png)', web.StaticFileHandler, {'path': './'}),
-  (r'/(\w*.ogg)', web.StaticFileHandler, {'path': './'}),
+  (r'/([a-zA-Z0-9_/]*.ogg)', web.StaticFileHandler, {'path': './'}),
   #(r'/(rest_api_example.png)', web.StaticFileHandler, {'path': './'}),
 ])
 
