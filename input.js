@@ -25,9 +25,18 @@ function setupMouse(){
     document.exitPointerLock();
   */
   game.cursor={canvas:c,anim:game.cursorAnim,pos:{x:100,y:100},locked:false}
+  game.keysDown={}
   document.addEventListener('pointerlockchange', changeCallback, false);
   document.addEventListener('mozpointerlockchange', changeCallback, false);
   document.addEventListener('webkitpointerlockchange', changeCallback, false);
+  document.onkeydown=function(evt) {
+    //if(evt.shiftKey)
+    //  game.keysDown['shift']=true
+  }
+  document.onkeyup=function(evt) {
+    //if(evt.shiftKey)
+    //  game.keysDown['shift']=false
+  }
   c.addEventListener('mousemove', function(evt) {
     var dx = evt.movementX ||
       evt.mozMovementX ||
@@ -71,6 +80,7 @@ function setupMouse(){
     //var message = 'Mouse position: ' + mousePos.x + ',' + mousePos.y;
   }, false);
   c.addEventListener('mouseup', function(evt) {
+    var c = document.getElementById("myCanvas");
     if(!game.cursor.locked)
       c.requestPointerLock();
     else{
@@ -84,17 +94,45 @@ function setupMouse(){
           if(len<30){
             addTypes(obj.types,['selected'])
           }else{
-            removeTypes(obj.types,['selected'])
+            if(!evt.shiftKey)
+              removeTypes(obj.types,['selected'])
           }
         }
       }else
       if(evt.which==3){
-        for (i in game.objs){
+        var toMove=[]
+        for (var i in game.objs){
           var obj=game.objs[i];
           if(checkTypes(obj.types,['friendly','selected'])){
-            obj.destType="move"
-            obj.dest.x=game.cursor.pos.x+game.screen.offset.x
-            obj.dest.y=game.cursor.pos.y+game.screen.offset.y
+            toMove.push(obj)
+          }
+        }
+        var sq=Math.round(Math.sqrt(toMove.length))
+        var size=30
+        var movePoss=[]
+        for (var i in toMove){
+          movePoss.push({x:game.cursor.pos.x+game.screen.offset.x+(-sq/2+i%sq)*size
+,y:game.cursor.pos.y+game.screen.offset.y+(-sq/2+Math.floor(i/sq))*size})
+        }
+        for (var i in movePoss){
+          var mPos=movePoss[i]
+          var bestObj=null
+          for (var c in toMove){
+            var obj=toMove[c]
+            var diff=getDiff(obj.pos,mPos)
+            var len=getLen(diff)
+            if(bestObj==null||bestObj.len>len){
+              bestObj={obj:obj,len:len}
+            }
+          }
+          bestObj.obj.destType="move"
+          bestObj.obj.dest.x=game.cursor.pos.x+game.screen.offset.x+(-sq/2+i%sq)*size
+          bestObj.obj.dest.y=game.cursor.pos.y+game.screen.offset.y+(-sq/2+Math.floor(i/sq))*size
+          for (var c in toMove){
+            if (toMove[c]==bestObj.obj){
+              toMove.splice(c,1)
+              break
+            }
           }
         }
       }

@@ -2,7 +2,7 @@
 </canvas>
 <script src=vector.js></script>
 <script src=obj.js></script>
-<script src=mouse.js></script>
+<script src=input.js></script>
 <script src=graphics.js></script>
 <script src=load.js></script>
 <script>
@@ -18,21 +18,34 @@ game={}
 game.screen={offset:{x:0,y:0},dim:{w:c.width,h:c.height}}
 game.cursorAnim={prefix:"hand",time:0,num:0,cols:1,rows:1,end:0,start:0,speed:1,size:{w:150,h:150},ssize:{x:512,y:512}}
 setupMouse()
-loadAssets(['smash.ogg','destroy.ogg'],['test.png','houseImg0.png','hand0.png','rubble0.png'],['ogre/ang'],loop)
+loadAssets(['smash.ogg','destroy.ogg'],['test.png','houseImg0.png','hand0.png','rubble0.png','grave0.png'],['ogre/ang'],loop)
 game.objs=[]
-for (var i=0;i<1;++i){
-  walkAnim={prefix:"ogre/ang",time:0,num:0,cols:8,rows:6,end:20,start:1,speed:1,size:{w:100,h:100},ssize:{x:128,y:128}}
-  standAnim={prefix:"ogre/ang",time:0,num:0,cols:8,rows:6,end:0,start:0,speed:1,size:{w:100,h:100},ssize:{x:128,y:128}}
-  attackAnim={prefix:"ogre/ang",time:0,num:0,cols:8,rows:6,end:45,start:21,speed:1,size:{w:100,h:100},ssize:{x:128,y:128}}
-  ogre={z:1,maxhp:10,dmg:5,types:['unit','friendly','alive','selected'],anims:{walk:walkAnim,stand:standAnim,attack:attackAnim},anim:standAnim,pos:{x:0,y:0},dest:{x:0,y:0},lastAng:0}
-  ogre.hp=ogre.maxhp
-  game.objs.push(ogre)
+{
+  for (var i=0;i<10;++i){
+    walkAnim={prefix:"ogre/ang",time:0,num:0,cols:8,rows:6,end:20,start:1,speed:1,size:{w:100,h:100},ssize:{x:128,y:128}}
+    standAnim={prefix:"ogre/ang",time:0,num:0,cols:8,rows:6,end:0,start:0,speed:1,size:{w:100,h:100},ssize:{x:128,y:128}}
+    attackAnim={prefix:"ogre/ang",time:0,num:0,cols:8,rows:6,end:45,start:21,speed:1,size:{w:100,h:100},ssize:{x:128,y:128}}
+    deadAnim={prefix:"grave",time:0,num:0,cols:1,rows:1,end:0,start:0,speed:1,size:{w:64,h:64},ssize:{x:512,y:501}}
+    var ogre={z:1,maxhp:10,dmg:5,types:['unit','friendly','alive','selected'],anims:{dead:deadAnim,walk:walkAnim,stand:standAnim,attack:attackAnim},anim:standAnim,pos:{x:30*i,y:0},dest:{x:0,y:0},lastAng:0}
+    ogre.hp=ogre.maxhp
+    game.objs.push(ogre)
+  }
+  for (var i=1;i<5;++i)
+  {
+    walkAnim={prefix:"ogre/ang",time:0,num:0,cols:8,rows:6,end:20,start:1,speed:1,size:{w:100,h:100},ssize:{x:128,y:128}}
+    standAnim={prefix:"ogre/ang",time:0,num:0,cols:8,rows:6,end:0,start:0,speed:1,size:{w:100,h:100},ssize:{x:128,y:128}}
+    attackAnim={prefix:"ogre/ang",time:0,num:0,cols:8,rows:6,end:45,start:21,speed:1,size:{w:100,h:100},ssize:{x:128,y:128}}
+    deadAnim={prefix:"grave",time:0,num:0,cols:1,rows:1,end:0,start:0,speed:1,size:{w:64,h:64},ssize:{x:512,y:501}}
+    var ogre={z:1,maxhp:10,dmg:5,types:['unit','enemy','alive'],anims:{dead:deadAnim,walk:walkAnim,stand:standAnim,attack:attackAnim},anim:standAnim,pos:{x:200+i*130,y:30+i*130},dest:{x:0,y:0},lastAng:0}
+    ogre.hp=ogre.maxhp
+    game.objs.push(ogre)
+  }
 }
 for (var i=1;i<5;++i)
 {
   anim={prefix:"houseImg",time:0,num:0,cols:1,rows:1,end:0,start:0,speed:1,size:{w:150,h:150},ssize:{x:128,y:128}}
   deadAnim={prefix:"rubble",time:0,num:0,cols:1,rows:1,end:0,start:0,speed:1,size:{w:140,h:70},ssize:{x:164,y:107}}
-  house={z:-1,maxhp:30,types:['building','enemy','alive'],anims:{dead:deadAnim,stand:anim},pos:{x:140*i,y:140*i},dest:{x:40,y:40},lastAng:0}
+  house={z:1,maxhp:30,types:['building','enemy','alive'],anims:{dead:deadAnim,stand:anim},pos:{x:140*i,y:140*i},dest:{x:40,y:40},lastAng:0}
   house.hp=house.maxhp
   game.objs.push(house)
 }
@@ -62,7 +75,7 @@ function loop(){
   for (var i=0;i<game.objs.length-1;++i){
     var o1=game.objs[i]
     var o2=game.objs[i+1]
-    if(o2.z<o1.z){
+    if(o2.z<o1.z||(o1.z==o2.z&&o1.pos.y>o2.pos.y)){
       //swap
       game.objs[i]=o2
       game.objs[i+1]=o1
@@ -78,26 +91,53 @@ function loop(){
         loadedSounds['destroy.ogg'].play()
         removeTypes(obj.types,['alive'])
         obj.anim=obj.anims.dead
+        obj.z=-1
+        obj.lastAng=0
       }
     }
     if(checkTypes(obj.types,['alive'])){
-      var diff={x:0,y:0}
+      var destDiff={x:0,y:0}
+      //shove out
+      if(checkTypes(obj.types,['unit','alive'])){
+        for (var c=0;c<game.objs.length;++c){
+          if(c!=i){
+            var objc=game.objs[c]
+            if(checkTypes(objc.types,['alive'])){
+              var diff=getDiff(obj.pos,objc.pos)
+              var len=getLen(diff)
+              var push=30
+              if(len>0&&len<push){
+                var o1b=checkTypes(obj.types,['building'])
+                var o2b=checkTypes(objc.types,['building'])
+                var disp=scl(diff,(1/len)*(push-len))
+                if(!o1b&&!o2b)
+                  disp=scl(disp,.5)
+                if(!o1b)
+                  obj.pos=add(obj.pos,scl(disp,-1))
+                if(!o2b)
+                  objc.pos=add(objc.pos,disp)
+              }
+            }
+          }
+        }
+      }
       if(obj.destType=="move"){
-        diff=getDiff(obj.pos,obj.dest)
+        destDiff=getDiff(obj.pos,obj.dest)
       }else
       if(obj.destType=="attack"){
         if(checkTypes(obj.dest.types,['alive']))
-          diff=getDiff(obj.pos,obj.dest.pos)
+          destDiff=getDiff(obj.pos,obj.dest.pos)
         else{
           obj.destType="move"
           obj.dest=cpy(obj.pos)
+          destDiff={x:0,y:0}
         }
       }
-      var len=getLen(diff)
+      var len=getLen(destDiff)
       if (obj.destType=="attack" && len < 60){//should calc target size and this range to see if we're in range
         attacking=true
         obj.anim=obj.anims.attack
-        var ang=getAng(diff)/Math.PI*180
+        var ang=getAng(destDiff)/Math.PI*180
         ang=(Math.round(ang/45)*45-90)
         obj.lastAng=ang
       }else
@@ -105,7 +145,7 @@ function loop(){
         //reset attack:
         obj.anims.attack.num=0
         obj.anims.attack.time=0
-        var nor=scl(diff,1/len)
+        var nor=scl(destDiff,1/len)
         nor=scl(nor,dt*(1/30))
         obj.pos=add(obj.pos,nor)
         var ang=getAng(nor)/Math.PI*180
@@ -113,6 +153,9 @@ function loop(){
         obj.lastAng=ang
         obj.anim=obj.anims.walk
       }else{
+        // not moving
+        obj.destType="none"
+        // find an enemy
         if(checkTypes(obj.types,['unit'])){
           bestTarget=null
           for (var c=0;c<game.objs.length;++c){
